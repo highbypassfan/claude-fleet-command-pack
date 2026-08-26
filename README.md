@@ -1,5 +1,13 @@
 # Claude Fleet Command Pack
 
+Mainly for the "research complete" notification for when I'm away from my computer. This isn't quite finished (I probably will cut some sfx) but I'll upload it now in case people want to fork it.
+
+obv audio is not mine, it's easy to scrape from the original games, will take down if requested. 
+
+below is claude:
+
+--------------------------------------------------------
+
 Homeworld Fleet Intelligence callouts as [Claude Code](https://claude.com/claude-code)
 notification sounds. Your terminal tells you a turn finished, a permission prompt
 is waiting, or a background task landed — in the voice of the Mothership.
