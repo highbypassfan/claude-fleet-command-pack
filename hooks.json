@@ -1,0 +1,134 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" done",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" input",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" fail",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" confirm",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" denied",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" compact",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" sessionstart",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" sessionend",
+            "async": true,
+            "timeout": 10,
+            "statusMessage": "Fleet Command"
+          }
+        ]
+      }
+    ]
+  }
+}
