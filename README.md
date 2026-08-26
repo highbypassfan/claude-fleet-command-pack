@@ -18,7 +18,7 @@ SessionStart       ->  "Hyperdrive engaged."
 ## Install
 
 ```sh
-git clone https://github.com/<you>/claude-fleet-command-pack.git
+git clone https://github.com/highbypassfan/claude-fleet-command-pack.git
 cd claude-fleet-command-pack
 ./install.sh
 ```
