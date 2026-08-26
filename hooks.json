@@ -65,32 +65,6 @@
         ]
       }
     ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone",
-            "async": true,
-            "timeout": 10,
-            "statusMessage": "Fleet Command"
-          }
-        ]
-      }
-    ],
-    "TaskCompleted": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone",
-            "async": true,
-            "timeout": 10,
-            "statusMessage": "Fleet Command"
-          }
-        ]
-      }
-    ],
     "PreCompact": [
       {
         "hooks": [

@@ -10,7 +10,6 @@ Ten hook events wired, sixteen alternates, one POSIX script, no dependencies.
 Stop               ->  "Research complete."
 Notification       ->  "Construction paused."
 PermissionRequest  ->  "Confirm attack on friendly unit."
-TaskCompleted      ->  "Ships transferred."
 PreCompact         ->  "Marshalling the fleet."
 SessionStart       ->  "Hyperdrive engaged."
 ```
@@ -39,19 +38,34 @@ merge by hand.
 | `Notification` | `input.wav` | "Construction paused." |
 | `PermissionRequest` | `confirm.wav` | "Confirm attack on friendly unit." |
 | `PermissionDenied` | `denied.wav` | "Order cancelled." |
-| `SubagentStop` | `agentdone.wav` | "Ships transferred." |
-| `TaskCompleted` | `agentdone.wav` | "Ships transferred." |
 | `PreCompact` | `compact.wav` | "Marshalling the fleet." |
 | `SessionStart` | `sessionstart.wav` | "Hyperdrive engaged." |
 | `SessionEnd` | `sessionend.wav` | "All construction cancelled." |
-
-`SubagentStop` and `TaskCompleted` share a clip by default. Give them separate
-sounds by copying a different file over one of them.
 
 Hooks fire asynchronously, so two events can land at once — a background task
 finishing as the turn ends. `claude-sound.sh` takes a lock: the first callout
 plays and any that overlap it exit silently. They are dropped rather than
 queued, because a backlog of stale callouts is worse than a missed one.
+
+### Optional: agent completion sounds
+
+`SubagentStop` and `TaskCompleted` are **not** wired by default. Both tend to
+fire at the same moment the turn ends, so you get two callouts back to back for
+what feels like one event. Add them if you run a lot of long background work and
+want it announced separately:
+
+```json
+"SubagentStop": [
+  { "hooks": [ { "type": "command", "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone", "async": true, "timeout": 10 } ] }
+],
+"TaskCompleted": [
+  { "hooks": [ { "type": "command", "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone", "async": true, "timeout": 10 } ] }
+]
+```
+
+`agentdone.wav` ("Ships transferred.") ships with the pack. Wire one or the
+other, not both — run `CLAUDE_SOUND_DEBUG=1 claude` first to see which actually
+fires on your build.
 
 Not every event fires in every Claude Code build. To see which ones land on your
 machine, run `CLAUDE_SOUND_DEBUG=1 claude` and work normally — each invocation
