@@ -14,6 +14,21 @@
 
 BASE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SOUND_DIR=$BASE/homeworld
+LOCK=${TMPDIR:-/tmp}/claude-fleet-sound.lock
+
+# Hooks are async, so two events landing together (a task finishing as the turn
+# ends) would start two players at once and talk over each other. First one in
+# wins; the rest exit silently rather than queue, since a backlog of stale
+# callouts is worse than a missed one.
+acquire_lock() {
+    # Steal a lock older than a minute - a killed player must not wedge this.
+    if [ -d "$LOCK" ] && [ -n "$(find "$LOCK" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
+        rmdir "$LOCK" 2>/dev/null
+    fi
+    mkdir "$LOCK" 2>/dev/null || return 1
+    trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM HUP
+    return 0
+}
 
 win_play() {
     # Translate the POSIX path for PowerShell (Git Bash / MSYS / Cygwin / WSL)
@@ -68,5 +83,6 @@ fi
 file=$SOUND_DIR/$name.wav
 [ -f "$file" ] || file=$SOUND_DIR/alternates/$name.wav
 
+acquire_lock || exit 0          # another callout is already playing
 play "$file" >/dev/null 2>&1
 exit 0

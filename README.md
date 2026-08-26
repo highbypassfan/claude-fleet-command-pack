@@ -10,7 +10,7 @@ Ten hook events wired, sixteen alternates, one POSIX script, no dependencies.
 Stop               ->  "Research complete."
 Notification       ->  "Construction paused."
 PermissionRequest  ->  "Confirm attack on friendly unit."
-TaskCompleted      ->  "Scout Squadron complete."
+TaskCompleted      ->  "Ships transferred."
 PreCompact         ->  "Marshalling the fleet."
 SessionStart       ->  "Hyperdrive engaged."
 ```
@@ -39,14 +39,19 @@ merge by hand.
 | `Notification` | `input.wav` | "Construction paused." |
 | `PermissionRequest` | `confirm.wav` | "Confirm attack on friendly unit." |
 | `PermissionDenied` | `denied.wav` | "Order cancelled." |
-| `SubagentStop` | `agentdone.wav` | "Scout Squadron complete." |
-| `TaskCompleted` | `agentdone.wav` | "Scout Squadron complete." |
+| `SubagentStop` | `agentdone.wav` | "Ships transferred." |
+| `TaskCompleted` | `agentdone.wav` | "Ships transferred." |
 | `PreCompact` | `compact.wav` | "Marshalling the fleet." |
 | `SessionStart` | `sessionstart.wav` | "Hyperdrive engaged." |
 | `SessionEnd` | `sessionend.wav` | "All construction cancelled." |
 
 `SubagentStop` and `TaskCompleted` share a clip by default. Give them separate
 sounds by copying a different file over one of them.
+
+Hooks fire asynchronously, so two events can land at once — a background task
+finishing as the turn ends. `claude-sound.sh` takes a lock: the first callout
+plays and any that overlap it exit silently. They are dropped rather than
+queued, because a backlog of stale callouts is worse than a missed one.
 
 Not every event fires in every Claude Code build. To see which ones land on your
 machine, run `CLAUDE_SOUND_DEBUG=1 claude` and work normally — each invocation
@@ -86,6 +91,8 @@ Bare names resolve against `homeworld/` first, then `homeworld/alternates/`.
 | `production-confirmed.wav` | "Production confirmed." | `UserPromptSubmit` |
 | `initiate-production.wav` | "Initiate production." | `UserPromptSubmit` |
 | `guarding-fleet.wav` | "Guarding Fleet" | — |
+| `scout-squadron-complete.wav` | "Scout Squadron complete." | `SubagentStop` / `TaskCompleted` |
+| `probe-complete.wav` | "probe complete." | `SubagentStop` / `TaskCompleted` |
 | `fleet-command-back-online.wav` | "Fleet command back online." | `SessionStart` |
 | `this-is-fleet-command.wav` | "This is Fleet Command," | `SessionStart` |
 | `she-is-now-fleet-command.wav` | "She is now Fleet Command." | `SessionStart` |
@@ -140,3 +147,7 @@ Relic Entertainment, from Homeworld Remastered Collection. They are included her
 for personal, non-commercial use by people who own the game. No ownership is
 claimed and no endorsement is implied. If you represent the rights holder and
 want them gone, open an issue and I'll remove them.
+
+---
+
+Built by [@acheronix](https://x.com/acheronix) on X.
