@@ -104,19 +104,24 @@ play() {
 # --- main -------------------------------------------------------------------
 name=${1:-done}
 
-# Hook events deliver JSON on stdin. Drain it so the caller never blocks on a
-# pipe we are not reading, and keep it for the debug log.
+# Hook events deliver JSON on stdin, but only the debug log needs it. Reading it
+# unconditionally would block until the writer closes the pipe - fine for a hook,
+# a hang for anything else that calls this with stdin still open.
 payload=""
-[ -t 0 ] || payload=$(cat 2>/dev/null)
+if [ "${CLAUDE_SOUND_DEBUG:-}" = "1" ] || [ -f "$BASE/debug" ]; then
+    [ -t 0 ] || payload=$(cat 2>/dev/null)
+fi
 
 if [ "${CLAUDE_SOUND_DEBUG:-}" = "1" ] || [ -f "$BASE/debug" ]; then
     printf '%s\t%s\tvol=%s\t%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$name" "$VOL" \
         "$(printf '%s' "$payload" | tr '\n' ' ' | cut -c1-300)" >> "$BASE/events.log"
 fi
 
-# Primary sounds live in homeworld/, everything swappable in homeworld/alternates/
+# Primary sounds live in homeworld/, swappable voice lines in homeworld/alternates/,
+# short interface blips in homeworld/ui/
 file=$SOUND_DIR/$name.wav
 [ -f "$file" ] || file=$SOUND_DIR/alternates/$name.wav
+[ -f "$file" ] || file=$SOUND_DIR/ui/$name.wav
 
 acquire_lock || exit 0          # another callout is already playing
 play "$file" >/dev/null 2>&1

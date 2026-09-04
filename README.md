@@ -8,18 +8,13 @@ below is claude:
 
 --------------------------------------------------------
 
-Homeworld Fleet Intelligence callouts as [Claude Code](https://claude.com/claude-code)
-notification sounds. Your terminal tells you a turn finished, a permission prompt
-is waiting, or a background task landed — in the voice of the Mothership.
+Homeworld Fleet Intelligence callouts and interface sounds as
+[Claude Code](https://claude.com/claude-code) hooks. Your terminal tells you a
+turn finished — in the voice of the Mothership.
 
-Seven hook events wired, eighteen alternates, one POSIX script, no dependencies.
-
-```
-Stop               ->  "Research complete."
-Notification       ->  "Construction paused."
-PermissionRequest  ->  "Confirm attack on friendly unit."
-PreCompact         ->  "Marshalling the fleet."
-```
+**One hook wired by default**: `Stop`, playing "Research complete." Everything
+else ships ready but unwired, because a callout you didn't ask for
+mid-conversation is noise. Add what you want from the table below.
 
 ## Install
 
@@ -29,53 +24,12 @@ cd claude-fleet-command-pack
 ./install.sh
 ```
 
-Copies the sounds to `~/.claude/sounds/` and merges the hooks into
+Copies the sounds to `~/.claude/sounds/` and merges the hook into
 `~/.claude/settings.json` (backing up whatever was there first). Restart Claude
-Code, or open `/hooks` once, to load the new config.
+Code, or open `/hooks` once, to load it.
 
-`./install.sh --no-hooks` copies the sounds and prints the hooks block for you to
-merge by hand.
-
-## Wired events
-
-| Hook event | Sound | Line |
-|---|---|---|
-| `Stop` | `done.wav` | "Research complete." |
-| `StopFailure` | `fail.wav` | "Hyperspace jump interrupted." |
-| `Notification` | `input.wav` | "Construction paused." |
-| `PermissionRequest` | `confirm.wav` | "Confirm attack on friendly unit." |
-| `PermissionDenied` | `denied.wav` | "Order cancelled." |
-| `PreCompact` | `compact.wav` | "Marshalling the fleet." |
-| `SessionEnd` | `sessionend.wav` | "All construction cancelled." |
-
-Hooks fire asynchronously, so two events can land at once — a background task
-finishing as the turn ends. `claude-sound.sh` takes a lock: the first callout
-plays and any that overlap it exit silently. They are dropped rather than
-queued, because a backlog of stale callouts is worse than a missed one.
-
-### Optional: agent completion sounds
-
-`SubagentStop` and `TaskCompleted` are **not** wired by default. Both tend to
-fire at the same moment the turn ends, so you get two callouts back to back for
-what feels like one event. Add them if you run a lot of long background work and
-want it announced separately:
-
-```json
-"SubagentStop": [
-  { "hooks": [ { "type": "command", "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone", "async": true, "timeout": 10 } ] }
-],
-"TaskCompleted": [
-  { "hooks": [ { "type": "command", "command": "\"$HOME/.claude/sounds/claude-sound.sh\" agentdone", "async": true, "timeout": 10 } ] }
-]
-```
-
-`agentdone.wav` ("Ships transferred.") ships with the pack. Wire one or the
-other, not both — run `CLAUDE_SOUND_DEBUG=1 claude` first to see which actually
-fires on your build.
-
-Not every event fires in every Claude Code build. To see which ones land on your
-machine, run `CLAUDE_SOUND_DEBUG=1 claude` and work normally — each invocation
-appends a timestamped line to `~/.claude/sounds/events.log`.
+`./install.sh --no-hooks` copies the sounds and prints the hook block to merge
+by hand.
 
 ## Volume
 
@@ -89,54 +43,112 @@ echo 75 > ~/.claude/sounds/volume
 A file rather than an env var, because hooks do not reliably inherit your
 shell's environment. `CLAUDE_SOUND_VOLUME=80` still works for a one-off.
 
-At 100 the Windows player uses `SoundPlayer`; below that it uses `MediaPlayer`,
-which supports volume and falls back to `SoundPlayer` if it cannot load. macOS
-uses `afplay -v`, Linux `paplay --volume` or `ffplay -volume`. `aplay` has no
-volume control and always plays full.
+At 100 the Windows player uses `SoundPlayer`; below that `MediaPlayer`, which
+supports volume and falls back to `SoundPlayer` if it cannot load. macOS uses
+`afplay -v`, Linux `paplay --volume` or `ffplay -volume`. `aplay` has no volume
+control and always plays full.
 
-## Swapping sounds
+## Playing a sound
 
-Hooks reference *names*, not paths. Copy an alternate over a primary:
+```sh
+~/.claude/sounds/claude-sound.sh done            # a wired name
+~/.claude/sounds/claude-sound.sh buildmenuonoff  # any clip in the pack
+```
+
+Names resolve against `homeworld/`, then `homeworld/alternates/`, then
+`homeworld/ui/`. Use it to audition anything before wiring it.
+
+## Wiring more events
+
+Add to `hooks` in `~/.claude/settings.json`, substituting the event name and the
+sound:
+
+```json
+"StopFailure": [
+  { "hooks": [ { "type": "command", "command": "\"$HOME/.claude/sounds/claude-sound.sh\" fail", "async": true, "timeout": 10 } ] }
+]
+```
+
+| Event | Fires when | Suggested sound |
+|---|---|---|
+| `Stop` **(wired)** | turn finished | `done` — "Research complete." |
+| `StopFailure` | turn ended in an error | `fail` — "Hyperspace jump interrupted." |
+| `Notification` | Claude surfaces something | `input` — "Construction paused." |
+| `PermissionRequest` | before a permission prompt | `confirm` — "Confirm attack on friendly unit." |
+| `PermissionDenied` | you rejected a prompt | `denied` — "Order cancelled." |
+| `PreCompact` | context about to compact | `compact` — "Marshalling the fleet." |
+| `SessionStart` | session opens | `sessionstart` — "Hyperdrive engaged." |
+| `SessionEnd` | session closes | `sessionend` — "All construction cancelled." |
+| `SubagentStop` | a subagent finishes | `agentdone` — "Ships transferred." |
+| `TaskCompleted` | a background task finishes | `agentdone` — "Ships transferred." |
+
+Two worth knowing before you wire them. `Notification` fires whenever Claude
+surfaces something, not only when it needs you, so it can talk mid-conversation.
+`SubagentStop` and `TaskCompleted` tend to land at the same moment the turn
+ends, giving two callouts for one event.
+
+Hooks fire asynchronously, so two can land together. `claude-sound.sh` takes a
+lock: the first callout plays, overlapping ones exit silently. Dropped rather
+than queued, because a backlog of stale callouts is worse than a missed one.
+
+Not every event fires in every Claude Code build. To see which land on yours,
+`touch ~/.claude/sounds/debug` (or `CLAUDE_SOUND_DEBUG=1`) and work normally —
+each invocation appends a line to `~/.claude/sounds/events.log`.
+
+## Voice lines
+
+`homeworld/` holds the wired names; `homeworld/alternates/` the rest. To change
+what an event plays, copy over the primary:
 
 ```sh
 cp ~/.claude/sounds/homeworld/alternates/upgrade-complete.wav \
    ~/.claude/sounds/homeworld/done.wav
 ```
 
-Audition anything first, without touching config:
+| File | Line |
+|---|---|
+| `done.wav` | "Research complete." |
+| `fail.wav` | "Hyperspace jump interrupted." |
+| `input.wav` | "Construction paused." |
+| `confirm.wav` | "Confirm attack on friendly unit." |
+| `denied.wav` | "Order cancelled." |
+| `agentdone.wav` | "Ships transferred." |
+| `compact.wav` | "Marshalling the fleet." |
+| `sessionstart.wav` | "Hyperdrive engaged." |
+| `sessionend.wav` | "All construction cancelled." |
 
-```sh
-~/.claude/sounds/claude-sound.sh hyperspace-jump-complete
-```
+Alternates: `upgrade-complete`, `hyperspace-jump-complete`,
+`hyperspace-jump-aborted`, `proximity-alert`, `insufficient-resources`,
+`new-research-available`, `construction-stopped`, `weapon-systems-powered-down`,
+`waypoint-confirmed`, `production-underway`, `production-confirmed`,
+`initiate-production`, `guarding-fleet`, `scout-squadron-complete`,
+`probe-complete`, `hyperdrive-engaged`.
 
-Bare names resolve against `homeworld/` first, then `homeworld/alternates/`.
+Plus three from Homeworld 1 campaign narration — `fleet-command-back-online`,
+`this-is-fleet-command`, `she-is-now-fleet-command`. Different voice actor and a
+noisier recording than the rest; they sound out of place mid-session.
 
-## Alternates
+## Interface sounds
 
-| File | Line | Suits |
-|---|---|---|
-| `upgrade-complete.wav` | "Upgrade complete." | `Stop` |
-| `hyperspace-jump-complete.wav` | "Hyperspace jump complete." | `Stop`, more dramatic |
-| `proximity-alert.wav` | "Proximity Alert" | `Notification`, more urgent |
-| `insufficient-resources.wav` | "Insufficient resources. Production paused." | `Notification` (2.85s — long) |
-| `new-research-available.wav` | "New research available." | `Notification` |
-| `construction-stopped.wav` | "Construction stopped." | `SessionEnd` |
-| `hyperspace-jump-aborted.wav` | "Hyperspace jump aborted." | `StopFailure` |
-| `weapon-systems-powered-down.wav` | "Weapon systems powered down." | `PermissionDenied` |
-| `waypoint-confirmed.wav` | "Waypoint confirmed." | `PermissionRequest` |
-| `production-underway.wav` | "Production underway." | `UserPromptSubmit` |
-| `production-confirmed.wav` | "Production confirmed." | `UserPromptSubmit` |
-| `initiate-production.wav` | "Initiate production." | `UserPromptSubmit` |
-| `guarding-fleet.wav` | "Guarding Fleet" | — |
-| `scout-squadron-complete.wav` | "Scout Squadron complete." | `SubagentStop` / `TaskCompleted` |
-| `probe-complete.wav` | "probe complete." | `SubagentStop` / `TaskCompleted` |
-| `fleet-command-back-online.wav` | "Fleet command back online." | `SessionStart` (not wired) |
-| `this-is-fleet-command.wav` | "This is Fleet Command," | `SessionStart` (not wired) |
-| `she-is-now-fleet-command.wav` | "She is now Fleet Command." | `SessionStart` (not wired) |
+`homeworld/ui/` holds 48 clips from the game's interface — 0.03s to 12s, mostly
+blips well under a second. Short enough to use where a spoken line would be too
+much, e.g. a click on `PermissionRequest`.
 
-The three Fleet Command clips come from Homeworld 1 campaign narration and use a
-different voice actor from everything else here. They sound out of place
-mid-session; `SessionStart` fires once in isolation, where the jump doesn't register.
+| Clip | Where it's from |
+|---|---|
+| `buildmenuonoff` | opening/closing the build menu |
+| `launchmenuonoff` | the launch manager |
+| `sensorsmanagerin` / `sensorsmanagerout` | entering and leaving the sensors manager |
+| `uie_commandclick` | issuing a command |
+| `mouserollover` | hovering a control |
+| `contactfound` / `contactloss` | a contact appearing or dropping |
+| `combatdetectedping`, `battlebracketping` | combat alerts |
+| `hyperspacepingin` / `hyperspacepingout` | hyperspace events |
+| `movementguichimes`, `movementdisc` | the move disc |
+| `closedropdownlist`, `collapsepanel`, `enterpopupmenu` | front-end menus |
+
+Levels vary a lot in the originals — 8% to 91% of full scale — so audition
+before wiring one, and use the `volume` file to tame the loud ones.
 
 ## Platform support
 
@@ -145,9 +157,9 @@ mid-session; `SessionStart` fires once in isolation, where the jump doesn't regi
 | Platform | Player |
 |---|---|
 | macOS | `afplay` |
-| Linux | `paplay` → `aplay` → `ffplay` |
+| Linux | `paplay` → `ffplay` → `aplay` |
 | WSL | falls through to `powershell.exe` |
-| Windows (Git Bash/MSYS/Cygwin) | `powershell.exe` + `Media.SoundPlayer` |
+| Windows (Git Bash/MSYS/Cygwin) | `powershell.exe` + `MediaPlayer`/`SoundPlayer` |
 
 Claude Code runs hooks through bash wherever Git Bash is present, which is the
 normal Windows install. On a Windows box with **no** Git Bash, hooks run through
@@ -155,24 +167,32 @@ PowerShell and the hook command won't resolve — install Git Bash, or swap in a
 PowerShell one-liner.
 
 If no player is found the script exits 0 silently, so a hook can never break a
-session. All hooks are `async` with a 10s timeout, so a 1–2s clip never blocks a turn.
+session. Hooks are `async` with a 10s timeout, so a clip never blocks a turn.
 
 ## Where the audio came from
 
-Homeworld Remastered ships its audio in Relic SGA v2 archives (`.big`). The
-Fleet Intelligence status bank lives in `EnglishSpeech.big` under
-`sound\speech\allships\fleet\`, and is shared between Homeworld 1 and 2 Remastered.
-
+Homeworld Remastered ships its audio in Relic SGA v2 archives (`.big`).
 `tools/big.py` is a standalone parser for that format — it lists and extracts
-any Relic `.big` archive:
+any Relic `.big`:
 
 ```sh
-python tools/big.py "…/HomeworldRM/Data/EnglishSpeech.big"     # list contents
+python tools/big.py ".../HomeworldRM/Data/EnglishSpeech.big"
 ```
 
-The three Fleet Command clips were cut from `EnglishSpeechHW1Campaign.big`
-narration at clause boundaries with a 60 ms fade-out. Everything else is
-untouched: 44.1 kHz mono 16-bit PCM, straight out of the archive.
+Speech lives in `EnglishSpeech.big` under `sound\speech\allships\fleet\`,
+already 44.1 kHz mono PCM, and is shared between Homeworld 1 and 2 Remastered.
+
+Sound effects are different: every one is `.fda`, AIFF-C wrapping "Relic Codec
+v1.6", and there are no PCM copies anywhere in the game. Decoding them needs
+[vgmstream](https://github.com/vgmstream/vgmstream), which has a Relic decoder:
+
+```sh
+vgmstream-cli -o out.wav "sound/sfx/ui/sensorsmanager/buildmenuonoff.fda"
+```
+
+The three Homeworld 1 clips were cut from `EnglishSpeechHW1Campaign.big`
+narration at clause boundaries, with a 15 ms fade-in, a 60 ms fade-out and a
+gentle taper above 9 kHz. Everything else is untouched.
 
 ## Licence
 
@@ -180,9 +200,9 @@ untouched: 44.1 kHz mono 16-bit PCM, straight out of the archive.
 see [LICENSE](LICENSE).
 
 **The audio is not.** The `.wav` files are the property of Gearbox Software /
-Relic Entertainment, from Homeworld Remastered Collection. They are included here
-for personal, non-commercial use by people who own the game. No ownership is
-claimed and no endorsement is implied. If you represent the rights holder and
+Relic Entertainment, from Homeworld Remastered Collection. They are included
+here for personal, non-commercial use by people who own the game. No ownership
+is claimed and no endorsement is implied. If you represent the rights holder and
 want them gone, open an issue and I'll remove them.
 
 ---
