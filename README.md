@@ -12,14 +12,13 @@ Homeworld Fleet Intelligence callouts as [Claude Code](https://claude.com/claude
 notification sounds. Your terminal tells you a turn finished, a permission prompt
 is waiting, or a background task landed — in the voice of the Mothership.
 
-Ten hook events wired, sixteen alternates, one POSIX script, no dependencies.
+Seven hook events wired, eighteen alternates, one POSIX script, no dependencies.
 
 ```
 Stop               ->  "Research complete."
 Notification       ->  "Construction paused."
 PermissionRequest  ->  "Confirm attack on friendly unit."
 PreCompact         ->  "Marshalling the fleet."
-SessionStart       ->  "Hyperdrive engaged."
 ```
 
 ## Install
@@ -47,7 +46,6 @@ merge by hand.
 | `PermissionRequest` | `confirm.wav` | "Confirm attack on friendly unit." |
 | `PermissionDenied` | `denied.wav` | "Order cancelled." |
 | `PreCompact` | `compact.wav` | "Marshalling the fleet." |
-| `SessionStart` | `sessionstart.wav` | "Hyperdrive engaged." |
 | `SessionEnd` | `sessionend.wav` | "All construction cancelled." |
 
 Hooks fire asynchronously, so two events can land at once — a background task
@@ -78,6 +76,23 @@ fires on your build.
 Not every event fires in every Claude Code build. To see which ones land on your
 machine, run `CLAUDE_SOUND_DEBUG=1 claude` and work normally — each invocation
 appends a timestamped line to `~/.claude/sounds/events.log`.
+
+## Volume
+
+Everything plays at **50%** by default. Change it by writing a number 0-100 into
+the `volume` file next to `claude-sound.sh`:
+
+```sh
+echo 75 > ~/.claude/sounds/volume
+```
+
+A file rather than an env var, because hooks do not reliably inherit your
+shell's environment. `CLAUDE_SOUND_VOLUME=80` still works for a one-off.
+
+At 100 the Windows player uses `SoundPlayer`; below that it uses `MediaPlayer`,
+which supports volume and falls back to `SoundPlayer` if it cannot load. macOS
+uses `afplay -v`, Linux `paplay --volume` or `ffplay -volume`. `aplay` has no
+volume control and always plays full.
 
 ## Swapping sounds
 
@@ -115,9 +130,9 @@ Bare names resolve against `homeworld/` first, then `homeworld/alternates/`.
 | `guarding-fleet.wav` | "Guarding Fleet" | — |
 | `scout-squadron-complete.wav` | "Scout Squadron complete." | `SubagentStop` / `TaskCompleted` |
 | `probe-complete.wav` | "probe complete." | `SubagentStop` / `TaskCompleted` |
-| `fleet-command-back-online.wav` | "Fleet command back online." | `SessionStart` |
-| `this-is-fleet-command.wav` | "This is Fleet Command," | `SessionStart` |
-| `she-is-now-fleet-command.wav` | "She is now Fleet Command." | `SessionStart` |
+| `fleet-command-back-online.wav` | "Fleet command back online." | `SessionStart` (not wired) |
+| `this-is-fleet-command.wav` | "This is Fleet Command," | `SessionStart` (not wired) |
+| `she-is-now-fleet-command.wav` | "She is now Fleet Command." | `SessionStart` (not wired) |
 
 The three Fleet Command clips come from Homeworld 1 campaign narration and use a
 different voice actor from everything else here. They sound out of place

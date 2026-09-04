@@ -9,19 +9,30 @@
 # ~/.claude/sounds/ directory can be copied to another machine as-is.
 # Never fails loudly - a missing player must not break the hook.
 #
-# Set CLAUDE_SOUND_DEBUG=1 to append every invocation to sounds/events.log.
-# Useful for confirming which hook events actually fire on a given machine.
+# VOLUME  0-100, default 50. Set it in the `volume` file next to this script
+#         (survives across sessions, which env vars do not reliably do inside
+#         hooks), or override per-run with CLAUDE_SOUND_VOLUME=80.
+#
+# CLAUDE_SOUND_DEBUG=1 appends every invocation to sounds/events.log - use it to
+# find out which hook events actually fire on a given machine.
 
 BASE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SOUND_DIR=$BASE/homeworld
 LOCK=${TMPDIR:-/tmp}/claude-fleet-sound.lock
 
+# --- volume -----------------------------------------------------------------
+VOL=50
+[ -f "$BASE/volume" ] && VOL=$(tr -dc '0-9' < "$BASE/volume")
+[ -n "${CLAUDE_SOUND_VOLUME:-}" ] && VOL=$(printf '%s' "$CLAUDE_SOUND_VOLUME" | tr -dc '0-9')
+[ -z "$VOL" ] && VOL=50
+[ "$VOL" -gt 100 ] 2>/dev/null && VOL=100
+
+# --- concurrency ------------------------------------------------------------
 # Hooks are async, so two events landing together (a task finishing as the turn
 # ends) would start two players at once and talk over each other. First one in
 # wins; the rest exit silently rather than queue, since a backlog of stale
 # callouts is worse than a missed one.
 acquire_lock() {
-    # Steal a lock older than a minute - a killed player must not wedge this.
     if [ -d "$LOCK" ] && [ -n "$(find "$LOCK" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
         rmdir "$LOCK" 2>/dev/null
     fi
@@ -30,17 +41,40 @@ acquire_lock() {
     return 0
 }
 
+# --- players ----------------------------------------------------------------
 win_play() {
-    # Translate the POSIX path for PowerShell (Git Bash / MSYS / Cygwin / WSL)
     p=$1
     if command -v cygpath >/dev/null 2>&1; then
         p=$(cygpath -w "$p")
     elif command -v wslpath >/dev/null 2>&1; then
         p=$(wslpath -w "$p")
     fi
-    # Double any single quotes so the PowerShell literal stays intact
     p=$(printf '%s' "$p" | sed "s/'/''/g")
-    powershell.exe -NoProfile -Command "(New-Object Media.SoundPlayer '$p').PlaySync()"
+
+    if [ "$VOL" -ge 100 ]; then
+        # SoundPlayer is the most reliable path; it has no volume control.
+        powershell.exe -NoProfile -Command \
+            "(New-Object Media.SoundPlayer '$p').PlaySync()"
+        return
+    fi
+
+    # MediaPlayer supports Volume. Falls back to SoundPlayer if it cannot load.
+    powershell.exe -NoProfile -Command "
+try {
+    Add-Type -AssemblyName PresentationCore -ErrorAction Stop
+    \$m = New-Object System.Windows.Media.MediaPlayer
+    \$m.Open([Uri]'$p')
+    \$w = 0
+    while (-not \$m.NaturalDuration.HasTimeSpan -and \$w -lt 100) { Start-Sleep -Milliseconds 20; \$w++ }
+    \$m.Volume = $VOL / 100
+    \$m.Play()
+    if (\$m.NaturalDuration.HasTimeSpan) {
+        Start-Sleep -Milliseconds ([int]\$m.NaturalDuration.TimeSpan.TotalMilliseconds + 200)
+    } else { Start-Sleep -Milliseconds 2500 }
+    \$m.Stop(); \$m.Close()
+} catch {
+    (New-Object Media.SoundPlayer '$p').PlaySync()
+}"
 }
 
 play() {
@@ -48,15 +82,15 @@ play() {
     [ -f "$f" ] || return 0
     case "$(uname -s)" in
         Darwin)
-            afplay "$f"
+            afplay -v "$(awk "BEGIN{printf \"%.3f\", $VOL/100}")" "$f"
             ;;
         Linux)
             if command -v paplay >/dev/null 2>&1; then
-                paplay "$f"
-            elif command -v aplay >/dev/null 2>&1; then
-                aplay -q "$f"
+                paplay --volume="$(( 65536 * VOL / 100 ))" "$f"
             elif command -v ffplay >/dev/null 2>&1; then
-                ffplay -nodisp -autoexit -loglevel quiet "$f"
+                ffplay -nodisp -autoexit -loglevel quiet -volume "$VOL" "$f"
+            elif command -v aplay >/dev/null 2>&1; then
+                aplay -q "$f"          # no volume control; plays at full
             elif command -v powershell.exe >/dev/null 2>&1; then
                 win_play "$f"          # WSL, no native audio
             fi
@@ -67,6 +101,7 @@ play() {
     esac
 }
 
+# --- main -------------------------------------------------------------------
 name=${1:-done}
 
 # Hook events deliver JSON on stdin. Drain it so the caller never blocks on a
@@ -74,9 +109,9 @@ name=${1:-done}
 payload=""
 [ -t 0 ] || payload=$(cat 2>/dev/null)
 
-if [ "${CLAUDE_SOUND_DEBUG:-}" = "1" ]; then
-    printf '%s\t%s\t%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$name" \
-        "$(printf '%s' "$payload" | tr '\n' ' ' | cut -c1-200)" >> "$BASE/events.log"
+if [ "${CLAUDE_SOUND_DEBUG:-}" = "1" ] || [ -f "$BASE/debug" ]; then
+    printf '%s\t%s\tvol=%s\t%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$name" "$VOL" \
+        "$(printf '%s' "$payload" | tr '\n' ' ' | cut -c1-300)" >> "$BASE/events.log"
 fi
 
 # Primary sounds live in homeworld/, everything swappable in homeworld/alternates/

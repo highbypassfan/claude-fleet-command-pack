@@ -78,19 +78,6 @@
         ]
       }
     ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$HOME/.claude/sounds/claude-sound.sh\" sessionstart",
-            "async": true,
-            "timeout": 10,
-            "statusMessage": "Fleet Command"
-          }
-        ]
-      }
-    ],
     "SessionEnd": [
       {
         "hooks": [
