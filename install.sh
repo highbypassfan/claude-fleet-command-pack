@@ -17,6 +17,8 @@ cp -R "$SRC/homeworld" "$DEST/"
 cp "$SRC/claude-sound.sh" "$DEST/claude-sound.sh"
 cp "$SRC/hooks.json" "$DEST/hooks.json"
 cp "$SRC/README.md" "$DEST/README.md"
+# Never clobber a volume the user has already set
+[ -f "$DEST/volume" ] || cp "$SRC/volume" "$DEST/volume"
 chmod +x "$DEST/claude-sound.sh"
 echo "sounds installed to $DEST"
 
