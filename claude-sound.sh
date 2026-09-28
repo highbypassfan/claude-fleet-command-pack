@@ -123,6 +123,17 @@ file=$SOUND_DIR/$name.wav
 [ -f "$file" ] || file=$SOUND_DIR/alternates/$name.wav
 [ -f "$file" ] || file=$SOUND_DIR/ui/$name.wav
 
+# The game reuses one recording for many interface events, so ui/aliases.txt
+# maps every other name onto the clip that actually holds the audio.
+if [ ! -f "$file" ] && [ -f "$SOUND_DIR/ui/aliases.txt" ]; then
+    canon=$(awk -v n="$name" '$1==n {print $2; exit}' "$SOUND_DIR/ui/aliases.txt")
+    [ -n "$canon" ] && file=$SOUND_DIR/ui/$canon.wav
+fi
+
+# Silent on a missing file so a hook can never break, but say so on stderr -
+# hooks discard it, a human running this by hand gets told.
+[ -f "$file" ] || echo "claude-sound: no clip named '$name'" >&2
+
 acquire_lock || exit 0          # another callout is already playing
 play "$file" >/dev/null 2>&1
 exit 0

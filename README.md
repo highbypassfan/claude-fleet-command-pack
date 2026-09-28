@@ -56,7 +56,19 @@ control and always plays full.
 ```
 
 Names resolve against `homeworld/`, then `homeworld/alternates/`, then
-`homeworld/ui/`. Use it to audition anything before wiring it.
+`homeworld/ui/`, then `homeworld/ui/aliases.txt`. An unknown name prints to
+stderr — hooks discard it, a human running the script by hand gets told.
+
+The game reuses one recording across many interface events, so 48 distinct
+clips carry 111 names. `aliases.txt` maps the rest onto the clip that holds the
+audio, so any name from the game works.
+
+## Hearing them all
+
+Open `audition.html` (in `~/.claude/sounds/` after install) in a browser. Every
+clip in the pack, grouped by what it suits, click to play, arrow keys to move,
+space to replay, and a filter box. Each row shows length and a peak-level bar,
+which matters because the interface clips range from 8% to 91% of full scale.
 
 ## Wiring more events
 
