@@ -1,8 +1,11 @@
 # Claude Fleet Command Pack
 
-Mainly for the "research complete" notification for when I'm away from my computer. This isn't quite finished (I probably will cut some sfx) but I'll upload it now in case people want to fork it.
+Mainly for the "research complete" notification for when I'm away from my computer. I spent some time going through other sfx but didn't find any I liked more than that. 
 
 obv audio is not mine, it's easy to scrape from the original games, will take down if requested. 
+
+
+You don't need to clone this to use it, can just take the one audio file and ask your agent to have it fire when a response is done, there's additional tools for previewing the audio, I think some don't work atm, I ended up busy with other things.
 
 below is claude:
 
