@@ -214,12 +214,10 @@ gentle taper above 9 kHz. Everything else is untouched.
 `claude-sound.sh`, `install.sh`, `tools/big.py` and this README are MIT licensed —
 see [LICENSE](LICENSE).
 
-**The audio is not.** The `.wav` files are the property of Gearbox Software /
-Relic Entertainment, from Homeworld Remastered Collection. They are included
-here for personal, non-commercial use by people who own the game. No ownership
-is claimed and no endorsement is implied. If you represent the rights holder and
-want them gone, open an issue and I'll remove them.
+**The audio is not.**  They are included here for personal, non-commercial use by 
+people who own the game. No ownership is claimed and no endorsement is implied. 
+If you represent the rights holder and want them gone, open an issue and I'll remove them.
 
 ---
 
-Built by [@acheronix](https://x.com/acheronix) on X.
+Built by [@acheronix](https://x.com/acheronix) on X (and Claude! - A)
